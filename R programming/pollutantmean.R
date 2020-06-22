@@ -2,7 +2,6 @@ pollutantmean <- function(directory, pollutant, id=1:332){
   if(getwd() != directory){
     setwd(directory)
   }
-  setwd(directory)
   getrows <- function(id){
     mondata <- data.frame()
     for(i in id){
