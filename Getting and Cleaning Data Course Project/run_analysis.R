@@ -24,8 +24,6 @@ names(final_x)[stdindex] <- stdname
 
 final_x <- select(final_x, meanindex, stdindex)
 
-#write.csv(final_x,"D:\\My Documents\\Coursera\\Data Science\\Course Projects\\Getting and Cleaning data -UCI HAR Dataset\\train\\x_train.csv", 
-#          row.names = FALSE)
 
 ###########################################################
 
@@ -45,8 +43,6 @@ ylabelconv <- function(x){
 
 final_y <- as.data.frame(apply(y_train,2,ylabelconv))
 
-#write.csv(final_y,"D:\\My Documents\\Coursera\\Data Science\\Course Projects\\Getting and Cleaning data -UCI HAR Dataset\\train\\y_train.csv", 
-#          row.names = FALSE)
 
 ###########################################################
 
@@ -73,8 +69,6 @@ names(final_x_test)[stdindex] <- stdname
 
 final_x_test <- select(final_x_test, meanindex, stdindex)
 
-#write.csv(final_x_test,"D:\\My Documents\\Coursera\\Data Science\\Course Projects\\Getting and Cleaning data -UCI HAR Dataset\\test\\x_test.csv", 
-#          row.names = FALSE)
 
 
 ###########################################################
@@ -95,8 +89,6 @@ ylabelconv <- function(x){
 
 final_y_test <- as.data.frame(apply(y_test,2,ylabelconv))
 
-#write.csv(final_y_test,"D:\\My Documents\\Coursera\\Data Science\\Course Projects\\Getting and Cleaning data -UCI HAR Dataset\\test\\y_test.csv", 
-#         row.names = FALSE)
 
 ###########################################################
 
@@ -111,8 +103,6 @@ final <- cbind(x_as_numeric,pre_final$activity)
 
 names(final)[67] <- "activity"
 
-#write.csv(final,"D:\\My Documents\\Coursera\\Data Science\\Course Projects\\Getting and Cleaning data -UCI HAR Dataset\\merged.csv", 
-#          row.names = FALSE)
 
 ###########################################################
 
@@ -147,8 +137,4 @@ forrenaming <- rownames(final_short)
 newrownames <- paste("Avg_",forrenaming, sep = "")
 rownames(final_short) <- newrownames
 
-#write.csv(final_short,"D:\\My Documents\\Coursera\\Data Science\\Course Projects\\Getting and Cleaning data -UCI HAR Dataset\\averageOfVariables.csv", 
-#          row.names = TRUE)
-
-write.table(final_short,"D:\\My Documents\\Coursera\\Data Science\\Course Projects\\Getting and Cleaning data -UCI HAR Dataset\\tidy_set.txt",
-            row.name = FALSE)
+#write.table(final_short,"[YOUR PATH]\\tidy_set.txt",row.name = FALSE)
