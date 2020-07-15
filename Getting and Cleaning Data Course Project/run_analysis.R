@@ -1,4 +1,5 @@
 library(dplyr)
+###########################################################
 
 x_train <- read.table("train/x_train.txt", sep = ";")
 
@@ -26,6 +27,8 @@ final_x <- select(final_x, meanindex, stdindex)
 #write.csv(final_x,"D:\\My Documents\\Coursera\\Data Science\\Course Projects\\Getting and Cleaning data -UCI HAR Dataset\\train\\x_train.csv", 
 #          row.names = FALSE)
 
+###########################################################
+
 y_train <- read.table("train/y_train.txt", sep = ";")
 
 names(y_train)[1] <-"activity" 
@@ -44,6 +47,8 @@ final_y <- as.data.frame(apply(y_train,2,ylabelconv))
 
 #write.csv(final_y,"D:\\My Documents\\Coursera\\Data Science\\Course Projects\\Getting and Cleaning data -UCI HAR Dataset\\train\\y_train.csv", 
 #          row.names = FALSE)
+
+###########################################################
 
 x_test <- read.table("test/x_test.txt", sep = ";")
 
@@ -72,6 +77,8 @@ final_x_test <- select(final_x_test, meanindex, stdindex)
 #          row.names = FALSE)
 
 
+###########################################################
+
 y_test <- read.table("test/y_test.txt", sep = ";")
 
 names(y_test)[1] <-"activity" 
@@ -91,6 +98,8 @@ final_y_test <- as.data.frame(apply(y_test,2,ylabelconv))
 #write.csv(final_y_test,"D:\\My Documents\\Coursera\\Data Science\\Course Projects\\Getting and Cleaning data -UCI HAR Dataset\\test\\y_test.csv", 
 #         row.names = FALSE)
 
+###########################################################
+
 final_df_train <- cbind(final_x,final_y)
 final_df_test <- cbind(final_x_test,final_y_test)
 
@@ -104,6 +113,8 @@ names(final)[67] <- "activity"
 
 #write.csv(final,"D:\\My Documents\\Coursera\\Data Science\\Course Projects\\Getting and Cleaning data -UCI HAR Dataset\\merged.csv", 
 #          row.names = FALSE)
+
+###########################################################
 
 walking_df <- filter(final,activity == "Walking")
 avg_walking_df <- as.data.frame(t(apply(walking_df[,1:66],2,mean)),
