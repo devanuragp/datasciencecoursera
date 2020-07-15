@@ -11,3 +11,4 @@ names(final)[67] <- "activity"
 
 #write.csv(final,"D:\\My Documents\\Coursera\\Data Science\\Course Projects\\Getting and Cleaning data -UCI HAR Dataset\\merged.csv", 
 #          row.names = FALSE)
+
