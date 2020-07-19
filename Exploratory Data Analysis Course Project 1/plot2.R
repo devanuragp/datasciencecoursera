@@ -17,3 +17,6 @@ names(new_df)[10] <- "DateTime"
 
 plot(new_df$DateTime,new_df$Global_active_power,type = "l",
      ylab="Global Active Power (kilowatts)",xlab = "")
+
+dev.copy(png,file = "plot3.png")
+dev.off()

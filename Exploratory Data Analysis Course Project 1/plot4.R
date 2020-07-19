@@ -28,3 +28,6 @@ legend("topright",lty = c(1,1,1),col=c("black","red","blue"),
        legend = c("Sub_Metering_1","Sub_Metering_2","Sub_Metering_2"),cex = 0.7)
 with(new_df,plot(DateTime,Global_reactive_power,type = "l",
                  ylab = "Global Reactive Power"))
+
+dev.copy(png,file = "plot4.png")
+dev.off()
