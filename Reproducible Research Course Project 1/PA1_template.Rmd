@@ -1,0 +1,230 @@
+---
+title: "Activity Monitoring Data Analysis"
+author: "Anurag Patel"
+date: "27/07/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## About the Data
+
+It is now possible to collect a large amount of data about personal movement using activity monitoring devices such as a Fitbit, Nike Fuelband, or Jawbone Up. These type of devices are part of the "quantified self" movement -- a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. But these data remain under-utilized both because the raw data are hard to obtain and there is a lack of statistical methods and software for processing and interpreting the data.
+
+## Loading and Preprocessing Data
+
+First we'll have to read the dataset which is in csv format and assign it to a variable using 'read.csv()' fuction. We'll name the variable as 'activitydf'. Then we'll print the head of that dataframe using 'head()'.
+
+```{r Read Csv}
+activitydf <- read.csv("activity.csv")
+head(activitydf)
+```
+
+Now we'll check the dimension of the dataframe and its structure
+
+```{r Dimensions & Structure}
+dim(activitydf)
+str(activitydf)
+```
+
+The variables included in this dataset are:
+
+1. steps: Number of steps taking in a 5-minute interval (missing values are coded as NA)
+2. date: The date on which the measurement was taken in YYYY-MM-DD format
+3. interval: Identifier for the 5-minute interval in which measurement was taken
+
+We can see that the date variable is of character type, so we'll convert it into Date type using function 'as.Date()'
+
+```{r Transforming date variable}
+activitydf[,2] <- as.Date(activitydf$date, format = "%Y-%m-%d")
+summary(activitydf)
+```
+
+## Mean Total Number of steps taken per day
+
+The data is collected from the device in 5-minute interval over 2 months time. This means for any single day we'll have the number of steps walked, for every 5 minute interval. So the total number of steps taken in that day will be number of steps taken every 5 minute over the period of 24 hours.
+
+To find the total steps per day we'll use the tapply() function.
+
+```{r Total steps per day}
+total_steps_per_day <- tapply(activitydf$steps,
+                              as.factor(activitydf$date),sum)
+```
+
+The variable total_steps_per_day stores an array of total number of steps per day. We'll plot a histogram for this variable using hist() function.
+
+```{r Histogram plot, echo=TRUE}
+hist(total_steps_per_day, xlab = "Steps per day",
+     main = "Histogram of steps per day" )
+```
+
+From the plot we can see that the frequency of step per day is maximum for the range 10000 - 15000. So, we can say that our mean falls somewhere in that range. To check that lets calculate the mean and median of total_steps_per_day.
+
+```{r Mean}
+mean(total_steps_per_day, na.rm = TRUE)
+```
+```{r Median}
+median(total_steps_per_day, na.rm = TRUE)
+```
+
+As seen above the mean & median total steps per day recorded for an anonymous individual in the months of October and November is 10766.19 & 10765 respectively.
+
+## Average daily activity pattern
+
+To find average daily activity pattern we'll plot a time series graph of 5-minute intervals vs the average number of steps taken for that interval in two months
+
+```{r Mean steps per interval}
+mean_steps_per_interval <- tapply(activitydf$steps, 
+                                  as.factor(activitydf$interval),
+                                  function(x){mean(x, na.rm = TRUE)})
+interval <- unlist(dimnames(mean_steps_per_interval))
+```
+
+Now we have average of values recorded over two months for every interval.We'll now make a time series plot.  
+
+```{r Average Daily activity pattern, echo=FALSE}
+plot(interval, mean_steps_per_interval, type = 'l', col = "steelblue",
+     ylab = "Steps count", main = "Time series plot of 5-minute Interval",
+     lwd = 2)
+```
+
+From the plot we can see that maximum number of steps are found between the interval 500 & 1000. After having a close look at the plot we can say that maximum steps are found at little more than the middle of the two interval. 
+So we can say max number of steps are found in any 5 minute interval in range 800-850.    
+
+## Imputing missing values
+
+Calculating total number of missing values(NA) in the dataset. That is total number of rows with missing values. 
+
+```{r Total missing values}
+lapply(activitydf, function(x){sum(is.na(x))})
+```
+
+We can see that the steps variable has a total of 2304 missing values where as the variables date and interval have 0 missing values. So we can conclude that there are 2304 rows of missing data.
+
+To fill the rows with missing data we'll use number of average steps for that particular interval  
+
+```{r Missing dataset}
+missing_activitydf <- activitydf[!complete.cases(activitydf),]
+```
+
+We'll create a custom function to replace all NA values in the missing activity dataset with their respective mean values
+
+```{r Imputing fuction code}
+imputefun <- function(x){
+  missing_activitydf[missing_activitydf$interval==x,][1] <- mean_steps_per_interval[as.character(x)]
+     missing_activitydf
+}
+```
+
+Now we'll use a for loop to iterate over all interval values in missing activity dataset and replace them using imputefun()
+
+```{r Imputing values & combining rows}
+for(x in unique(missing_activitydf$interval)){
+  missing_activitydf <- imputefun(x)
+}
+new_activitydf <- rbind(activitydf[complete.cases(activitydf),],
+                        missing_activitydf)
+```
+
+We have a new data frame named new_activitydf which has in it filled values of the NAs in activitydf. To check this we'll run the dim() on both the data frames.
+
+```{r Checking dimension}
+dim(activitydf)
+dim(new_activitydf)
+```
+
+Now that we have a dataset with all the missing values filled, we will compute the total steps for each day and its mean and median. Lets see how much difference do this values make when compared to the original calculation where NA's were ignored.
+
+```{r New total steps per day}
+new_tspd <- tapply(new_activitydf$steps,
+                              as.factor(new_activitydf$date),sum)
+```
+
+Lets Plot a Histogram and inspect the differences.
+
+```{r New histogram plot, echo= TRUE}
+hist(new_tspd, xlab = "Steps per day",
+     main = "Histogram of steps per day" )
+```
+
+Computing the mean & median total number of steps per day
+
+```{r New mean}
+mean(new_tspd, na.rm = TRUE)
+```
+```{r New median}
+median(new_tspd, na.rm = TRUE)
+```
+
+These new values derived out of the dataset with no missing values doesn't show any difference when compared to the values derived from the original dataset with 2304 rows of missing values. The mean & median of the new dataset is 10766.19 and 10766.19 respectively whereas the mean & median of the old dataset is 10766.19 and 10765 respectively.
+
+## Differences in activity patterns between weekdays and weekends
+
+For this part of our analysis we will make a new variable(column) in our dataset and name it dayofweek. This will be a factor variable with 2 levels "weekday" and "weekend"
+
+```{r Create new variable}
+new_activitydf$dayofweek <- NA
+new_activitydf[weekdays(new_activitydf$date) == "Monday" |
+                 weekdays(new_activitydf$date) == "Tuesday" |
+                 weekdays(new_activitydf$date) == "Wednesday" |
+                 weekdays(new_activitydf$date) == "Thursday" |
+                 weekdays(new_activitydf$date) == "Friday", ][4] <- "weekday"
+new_activitydf[weekdays(new_activitydf$date) == "Saturday"|
+                 weekdays(new_activitydf$date) == "Sunday",][4] <- "weekend"
+```
+
+Now we'll convert the dayofweek variable into a factor variable. Lets convert it and take a look at the summary of the dataframe.
+
+```{r Convert to factor and summary}
+new_activitydf$dayofweek <-as.factor(new_activitydf$dayofweek)
+summary(new_activitydf)
+```
+
+Now we'll import the lattice package to make panel plot. We have to make a panel plot containing a time series plot of the 5-minute interval and the average number of steps taken, averaged across all weekday days or weekend days.
+
+```{r Import lattice}
+library(lattice)
+```
+
+To do that we will subset the latest dataset into 2 parts weekday and weekend, then we'll find the mean of steps for each interval over weekday or weekend and then combine both the results into one data frame for plotting purposes. 
+
+```{r Data for plotting}
+
+weekday_sub <-subset(new_activitydf, new_activitydf$dayofweek == "weekday",
+                      c("steps","interval","dayofweek"))
+weekday_sub <-tapply(weekday_sub$steps, as.factor(weekday_sub$interval),mean)
+
+
+weekend_sub <-subset(new_activitydf, new_activitydf$dayofweek == "weekend",
+                      c("steps","interval","dayofweek"))
+weekend_sub<-tapply(weekend_sub$steps, as.factor(weekend_sub$interval),mean)
+
+```
+
+We have the means of each interval over weekdays and weekend now to plot the graph in lattice plotting system we'll have to combine the results into one data frame 
+
+```{r Convert the data into one Data frame}
+
+weekday_sub <- data.frame(weekday_sub, "weekday", interval)
+names(weekday_sub) <- c("steps","dayofweek","interval")
+
+weekend_sub <- data.frame(weekend_sub,"weekend",interval)
+names(weekend_sub) <- c("steps","dayofweek","interval")
+
+tot_weekdays <- rbind(weekday_sub,weekend_sub)
+```
+
+Now everything is ready to plot the graphs
+
+```{r Time series new plot, echo= TRUE}
+xyplot(steps~as.numeric(interval)|dayofweek ,
+       data = tot_weekdays, type = 'l',layout=c(1,2),
+       xlab = "Intervals", ylab = "number of steps",
+       main= "Time series plot of 5-minute interval vs number of steps")
+```
+
+
+
+
