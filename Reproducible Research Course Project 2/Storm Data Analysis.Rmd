@@ -1,0 +1,277 @@
+---
+title: "Effects of Severe Weather Condition on Population Health and Economy"
+author: "Anurag Patel"
+date: "28/07/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Synopsis
+
+Storms and other severe weather events can cause both public health and economic problems for a country. Many severe events can result in fatalities, injuries, and property damage and crop damage. Preventing such outcomes to the extent possible is a key concern. This analysis studies the U.S. National Oceanic and Atmospheric Administration's (NOAA) storm database and answer's two important questions, "which events are most harmful to population health ?" and "which events have greatest consequences to the country's economy ?". The data in the database is very untidy, and therefore requires proper processing to enable us to perform calculations. In our analysis we calculated total values of required variables for each event. We have created 2 plots namely "Most harmful events in terms of population health" and "Events with greatest economic consequences"
+
+## Loading and Summarizing Data
+
+The data comes in the form of a comma-separated-value file compressed via the bzip2 algorithm to reduce its size. We'll store the download link of this file into a variable and later use it to download the file. Set your working directory before you download the file using download.file() function.
+
+```{r File downloading, echo=TRUE}
+fileurl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+download.file(fileurl,"stormdata.csv.bz2")
+```
+
+Now we'll load the data into a data frame. Lets call the data frame "stormdf".
+
+```{r Load data, echo=TRUE}
+stormdf <- read.csv("stormdata.csv.bz2")
+head(stormdf)
+```
+
+Lets take a look at the dimension of our data frame and its structure. 
+
+```{r Dimension & structure}
+dim(stormdf)
+str(stormdf)
+```
+
+This data frame contains 902297 observations of 37 variables, that means it has 902297 rows and 37 columns. 
+
+## Data Processing 
+
+We have 37 variables each storing different type of data. We want to understand the which events are very harmful in terms of human life casualties and which events have greatest consequence on economy. So we are only interested in columns providing information about fatalities and economic damage along with the event type and its date. So we will select the columns "BGN_DATE", "EVTYPE", "FATALITIES", "INJURIES", "PROPDMG", "PROPDMGEXP", "CROPDMG" and "CROPDMGEXP".
+
+To select this columns we will load the dplyr package as it makes the task way easier.
+
+```{r Load dplyr}
+library(dplyr)
+```
+
+Now we'll select only the required columns using the dplyr package's select() function.
+
+```{r Select columns}
+stormdf <- select(stormdf, BGN_DATE, EVTYPE, FATALITIES, INJURIES,
+                  PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP)
+str(stormdf)
+```
+
+We now have a data frame of 902297 rows and 8 columns. To make the data useful for analysis we'll process its columns. The "BGN_DATE" column is of "character" class, so using the as.Date() function we'll convert the variable to "Date" class.
+
+```{r BGN_DATE transformation}
+stormdf$BGN_DATE <- as.Date(stormdf$BGN_DATE,
+                            format = "%m/%d/%Y %H:%M:%S")
+class(stormdf$BGN_DATE)
+```
+
+On inspecting the "EVTYPE" variable we'll see that some values are lowercase some are only uppercase and some are sentence case. For ease of use and to avoid the confusion we'll convert all the values to lowercase using the tolower() function.  
+
+```{r EVTYPE transformation 1}
+head(unique(stormdf$EVTYPE))
+stormdf$EVTYPE <- tolower(stormdf$EVTYPE)
+head(unique(stormdf$EVTYPE))
+```
+
+According to the [Storm Data Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) the only values allowed in the "EVTYPE" variable are :
+Astronomical Low Tide, Avalanche, Blizzard, Coastal Flood, Cold/Wind Chill, Debris Flow, Dense Fog, Dense Smoke, Drought, Dust Devil, Dust Storm, Excessive Heat, Extreme Cold/Wind Chill, Flash Flood, Flood, Frost/Freeze, Funnel Cloud, Freezing Fog, Hail, Heat, Heavy Rain, Heavy Snow, High Surf, High Wind, Hurricane (Typhoon), Ice Storm, Lake-Effect Snow, Lakeshore Flood, Lightning, Marine Hail, Marine High Wind, Marine Strong Wind, Marine Thunderstorm Wind, Rip Current, Seiche, Sleet, Storm Surge/Tide, Strong Wind, Thunderstorm Wind, Tornado, Tropical Depression, Tropical Storm, Tsunami, Volcanic Ash, Waterspout, Wildfire, Winter Storm, Winter Weather.  
+
+So we'll filter the "EVTYPE" variable only with the values given above and eliminate the rest of the values.   
+
+```{r Allowed events}
+allowedevents <- tolower(c("Astronomical Low Tide", "Avalanche", "Blizzard", "Coastal Flood", "Cold", "Wind Chill", "Debris Flow", "Dense Fog", "Dense Smoke", "Drought", "Dust Devil", "Dust Storm", "Excessive Heat", "Extreme Cold", "Flash Flood", "Flood", "Frost", "Freeze", "Funnel Cloud", "Freezing Fog", "Hail", "Heat", "Heavy Rain", "Heavy Snow", "High Surf", "High Wind", "Hurricane", "Typhoon", "Ice Storm", "Lake-Effect Snow", "Lakeshore Flood", "Lightning", "Marine Hail", "Marine High Wind", "Marine Strong Wind", "Marine Thunderstorm Wind", "Rip Current", "Seiche", "Sleet", "Storm Surge","Tide", "Strong Wind", "Thunderstorm Wind", "Tornado", "Tropical Depression", "Tropical Storm", "Tsunami", "Volcanic Ash", "Waterspout", "Wildfire", "Winter Storm", "Winter Weather","extreme cold/wind chill","cold/wind chill", "hurricane/typhoon", "frost/freeze", "Storm Surge/Tide")) 
+```
+
+```{r EVTYPE transformation 2}
+stormdf <- stormdf[stormdf$EVTYPE %in% allowedevents,]
+head(stormdf)
+dim(stormdf)
+```
+
+The "PROPDMG" and "PROPDMGEXP" columns contains data regarding damage caused by the event in monetary terms (USD).  The "PROPDMG" columns contains the numeric value of monetary damage and "PROPDMGEXP" contains the multiplier value for "PROPDMG". A similar thing is happening with the columns "CROPDMG" and "CROPDMGEXP". To get the actual value in USD we need to multiply the value in both columns. But to do that we'll need to replace the value in "PROPDMGEXP" and "CROPDMGEXP" with their numeric equivalent. The task to find the equivalent values is a bit difficult. I referred [this](https://github.com/flyingdisc/RepData_PeerAssessment2/blob/master/how-to-handle-PROPDMGEXP.md) for my task.
+
+Check the unique values in "PROPDMGEXP" and "CROPDMGEXP"
+
+```{r PROPDMGEXP CROPDMGEXP unique}
+unique(stormdf$PROPDMGEXP)
+unique(stormdf$CROPDMGEXP)
+```
+
+Now we'll create a common function for both the columns to replace the values found above with their equivalent numeric value.
+
+```{r ConvertEXP function}
+expval <- function(temp){
+    temp <- gsub("[0-9]","10",temp)
+    temp <- gsub("K","1000",temp)
+    temp <- gsub("k","1000",temp)
+    temp <- gsub("M","1000000",temp)
+    temp <- gsub("m","1000000",temp)
+    temp <- gsub("H","100",temp)
+    temp <- gsub("h","100",temp)
+    temp <- gsub("B","1000000000",temp)
+    temp
+}
+```
+
+We can see that this function does not address empty character and signs like "+", "-", "?". We'll process them separately while processing the individual columns.
+
+First processing the "PROPDMGEXP" column
+
+```{r PROPDMGEXP transformation}
+stormdf$PROPDMGEXP <- expval(stormdf$PROPDMGEXP)
+stormdf$PROPDMGEXP[stormdf$PROPDMGEXP == ""] <- 0
+stormdf$PROPDMGEXP[stormdf$PROPDMGEXP == "+"] <- 0
+stormdf$PROPDMGEXP[stormdf$PROPDMGEXP == "?"] <- 0
+stormdf$PROPDMGEXP[stormdf$PROPDMGEXP == "-"] <- 0
+unique(stormdf$PROPDMGEXP)
+```
+
+Now processing the "CROPDMGEXP" column
+
+```{r CROPDMGEXP transformation}
+stormdf$CROPDMGEXP <- expval(stormdf$CROPDMGEXP)
+stormdf$CROPDMGEXP[stormdf$CROPDMGEXP == ""] <- 0
+stormdf$CROPDMGEXP[stormdf$CROPDMGEXP == "+"] <- 0
+stormdf$CROPDMGEXP[stormdf$CROPDMGEXP == "?"] <- 0
+stormdf$CROPDMGEXP[stormdf$CROPDMGEXP == "-"] <- 0
+unique(stormdf$CROPDMGEXP)
+```
+
+Now to perform multiplication we will convert the columns "PROPDMGEXP" and "CROPDMGEXP" to numeric class using as.numeric(function)
+
+```{r PROPDMGEXP CROPDMGEXP numeric}
+stormdf$PROPDMGEXP <- as.numeric(stormdf$PROPDMGEXP)
+stormdf$CROPDMGEXP <- as.numeric(stormdf$CROPDMGEXP)
+```
+
+Creating two new columns containing actual property damage and crop damage value, namely "ACTPROPDMG" and "ACTCROPDMG"
+
+```{r New columns}
+stormdf$ACTPROPDMG <- stormdf$PROPDMG * stormdf$PROPDMGEXP
+stormdf$ACTCROPDMG <- stormdf$CROPDMG * stormdf$CROPDMGEXP
+```
+
+## Data Analysis
+
+Coming back to the questions asked above, about which events have maximum effect on the human health and which events have maximum effect on the country's (USA) economy, we need to find the events with maximum values of variables such as "FATALITIES", "INJURIES", "ACTPROPDMG" and "ACTCROPDMG".
+
+For "FATALITIES", we will create a new data frame containing the sum of fatalities for each unique event. Then sorting the sum obtained in descending order will give us the events which have caused maximum deaths.      
+
+```{r Fatality data frame}
+fatality <- as.data.frame(tapply(stormdf$FATALITIES,
+                                 as.factor(stormdf$EVTYPE), sum))
+names(fatality)[1] <- "fatalities"
+fatality$eventtype <- row.names(fatality)
+fatality <- select(fatality[order(fatality$fatalities,
+                                  decreasing =  TRUE ),],eventtype,fatalities)
+print.data.frame(fatality, row.names = FALSE, max = 10 )
+```
+
+Here we can see that the event "Tornado" has caused maximum fatalities, to be precise 5633 fatalities over all the years in which data has been collected. After tornado we have the event "Excessive heat" with 1903 fatalities. The gap between tornado and excessive heat is quite significant.  
+
+Similarly, repeating the above chunk for variables "INJURIES", "ACTPROPDMG" and "ACTCROPDMG".
+
+```{r Injury data frame}
+injury <- as.data.frame(tapply(stormdf$INJURIES,
+                               as.factor(stormdf$EVTYPE), sum))
+names(injury)[1] <- "injuries"
+injury$eventtype <- row.names(injury)
+injury <- select(injury[order(injury$injuries,
+                              decreasing = TRUE ),],eventtype,injuries)
+print.data.frame(injury, row.names = FALSE, max = 10)
+```
+
+Even here, as seen with the number of fatalities, the event "Tornado" has caused maximum injuries, to be precise 91346 fatalities over all the years in which data has been collected. After tornado we have the event "Flood" with 6789 injuries. The gap between tornado and flood is massive.
+
+```{r PropertyDamage data frame}
+propertydamage <- as.data.frame(tapply(stormdf$ACTPROPDMG,
+                               as.factor(stormdf$EVTYPE), sum))
+names(propertydamage)[1] <- "propdamages"
+propertydamage$eventtype <- row.names(propertydamage)
+propertydamage <- select(propertydamage[order(propertydamage$propdamages,
+                              decreasing = TRUE ),],eventtype,propdamages)
+print.data.frame(propertydamage, row.names = FALSE, max = 10)
+```
+
+While talking about damages in terms of property we can see that the event "Flood" has caused maximum damages, to be precise 144 Billion USD over all the years data have been collected. After flood we have the event "Hurricane/typhoon" with property damages worth 69 Billion USD. The gap between flood and hurricane/typhoon is approximately 75 Billion USD.
+
+```{r CropDamage data frame}
+cropdamage <- as.data.frame(tapply(stormdf$ACTCROPDMG,
+                               as.factor(stormdf$EVTYPE), sum))
+names(cropdamage)[1] <- "cropdamages"
+cropdamage$eventtype <- row.names(cropdamage)
+cropdamage <- select(cropdamage[order(cropdamage$cropdamages,
+                              decreasing = TRUE ),],eventtype,cropdamages)
+print.data.frame(cropdamage, row.names = FALSE, max = 10)
+```
+
+Here we are observing the damage caused to crops in terms of money in USD. We can see that the event "Drought" has resulted in maximum monetary loss, approx 14 Billion USD over all the years data have been collected. After drought we have the event "Flood" with 5.6 Billion USD worth of losses. The gap between drought and flood is worth noting.
+
+## Result
+
+### Types of Events most harmful to population health
+The events most harmful to the population health across USA, are basically the events with maximum fatalities and injuries. We'll plot a graph to show the events with most fatalities and the events with most injuries. We'll only consider the top 5 event types in terms of fatalities and injuries each, as we are inspecting the most harmful events.
+
+```{r Plot 1}
+par(mfrow = c(1,2), las = 3, bg = "lightgrey", cex = 0.7,
+        omi = c(0.4,0.1,0.5,0.1))
+barplot(fatalities ~ eventtype, fatality[1:5,],
+        col = "darkred", xlab = "", ylab = "Fatalities",
+        main = "Fatalities by Events")
+barplot(injuries ~ eventtype, injury[1:5,],
+        col = "steelblue", xlab = "", ylab = "Injuries",
+        main = "Injuries by Events")
+mtext("Most harmful events in terms of population health",
+        outer = TRUE, las = 1, cex = 1)
+```
+
+
+We can see that "Tornado" has caused maximum fatalities and injuries, therefore we can say that tornado is the most harmful event to population health. Tornado is followed by "Excessive heat" in terms of fatalities whereas it has caused marginally less number of injuries in comparison to "Floods". It is safe to conclude that the most harmful events to population health are "Tornado", "Excessive heat", "Flash flood", "Floods", "Heat" and "Lightning".
+
+### Events with greatest economic consequences
+The events with greatest economic consequences can be determined by inspecting the property and crops damage by those events. We'll plot a graph to show the events causing more property damage and crop damage. Only the top 5 event types will be considered as we are interested in the events with greatest economic consequence.
+
+```{r Plot 2}
+par(mfrow = c(1,2), las = 3, bg = "lightgrey", cex = 0.7,
+        omi = c(0.4,0.1,0.5,0.1))
+barplot(propdamages/1000000000 ~ eventtype, propertydamage[1:5,],
+        col = "mediumseagreen", xlab = "", ylab = "US Dollars in Billions",
+        main = "Property Damage by Events")
+barplot(cropdamages/1000000000 ~ eventtype, cropdamage[1:5,],
+        col = "darkorange", xlab = "", ylab = "US Dollars in Billions",
+        main = "Crop Damage by Events")
+mtext("Events with greatest economic consequences",
+        outer = TRUE, las = 1, cex = 1)
+```
+
+Here the events causing maximum property damages are Floods (144 Billion USD), Hurricane/ Typhoon (69 Billion USD), Tornado (57 Billion USD), Storm surge (43 Billion USD) and Flash Flood (16 Billion USD). Similarly events having greatest impact on crops are Drought (14 Billion USD), Flood (5.6 Billion USD), Ice Storm (5 Billion USD), Hail (3 Billion USD) and Hurricane (2.7 Billion USD).   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

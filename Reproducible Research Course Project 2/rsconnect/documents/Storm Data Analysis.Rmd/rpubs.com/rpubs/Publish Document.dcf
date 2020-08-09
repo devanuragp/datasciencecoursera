@@ -1,0 +1,10 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/647387/a3d28597382a4827b21f1f99187bb682
+bundleId: https://api.rpubs.com/api/v1/document/647387/a3d28597382a4827b21f1f99187bb682
+url: http://rpubs.com/devanuragp/647387
+when: 1596954155.41051
